@@ -3,7 +3,7 @@ generate:
 dev:
 	go get github.com/golang/lint/golint
 	go get honnef.co/go/tools/cmd/megacheck
-	go get github.com/stretchr/testify/assert
+	dep ensure
 
 lint:
 	@go vet -v $(go list ./... | grep -v /vendor/)
