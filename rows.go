@@ -18,6 +18,22 @@ func (r *rows) Scan(args ...interface{}) Error {
 	return newError(r.rows.Scan(args...))
 }
 
+func (r *rows) Map(f func(Row) error) Error {
+	if r.rows.Err() != nil {
+		return r.Err()
+	}
+
+	defer r.Close()
+
+	for r.Next() {
+		if err := f(r); err != nil {
+			return newError(err)
+		}
+	}
+
+	return nil
+}
+
 func (r *rows) Next() bool {
 	return r.rows.Next()
 }

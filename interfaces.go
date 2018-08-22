@@ -31,6 +31,7 @@ type Row interface {
 
 // Rows is a database rows interface
 type Rows interface {
+	Map(func(Row) error) Error
 	Next() bool
 	Scan(...interface{}) Error
 	Close()

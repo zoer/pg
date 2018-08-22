@@ -2,6 +2,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -47,22 +48,57 @@ func TestConnPool_QueryRow(t *testing.T) {
 func TestConnPool_Query(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	a := require.New(t)
 	p := newTestPool()
 	defer p.Close()
 
-	var i int
-	rows, err := p.Query(ctx, "SELECT $1::int", 1)
-	a.NoError(err)
-	a.True(rows.Next())
-	rows.Scan(&i)
-	a.Equal(i, 1)
-	a.False(rows.Next())
-	rows.Close()
+	t.Run("Scan", func(t *testing.T) {
+		a := require.New(t)
 
-	_, err = p.Query(ctx, "SELECT 1::foo", 1)
-	a.True(err.IsCode("42704"))
+		var i int
+		rows, err := p.Query(context.TODO(), "SELECT $1::int", 1)
+		a.NoError(err)
+		a.True(rows.Next())
+		rows.Scan(&i)
+		a.Equal(i, 1)
+		a.False(rows.Next())
+		rows.Close()
+	})
+
+	t.Run("Map with valid iteration", func(t *testing.T) {
+		a := require.New(t)
+
+		var ints []int
+		rows, err := p.Query(context.TODO(), "SELECT unnest('{1,2}'::int[]);")
+		a.NoError(err)
+		err = rows.Map(func(r Row) error {
+			var i int
+			a.NoError(r.Scan(&i))
+			ints = append(ints, i)
+			return nil
+		})
+		a.NoError(err)
+		a.Equal(ints, []int{1, 2})
+	})
+
+	t.Run("Map, when there's an error during iteration", func(t *testing.T) {
+		a := require.New(t)
+
+		var ints []int
+		rows, err := p.Query(context.TODO(), "SELECT unnest('{3,4}'::int[]);")
+		a.NoError(err)
+		err = rows.Map(func(r Row) error {
+			return errors.New("foo")
+		})
+		a.Equal(err.Error(), "foo")
+		a.Empty(ints)
+	})
+
+	t.Run("invalid type", func(t *testing.T) {
+		a := require.New(t)
+
+		_, err := p.Query(context.TODO(), "SELECT 1::foo", 1)
+		a.True(err.IsCode("42704"))
+	})
 }
 
 func TestConnPool_Close(t *testing.T) {
