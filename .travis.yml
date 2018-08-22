@@ -4,8 +4,12 @@ go:
   - 1.10.x
   - tip
 
+services:
+  - postgresql
+
 before_install:
   - make dev
+  - psql -c 'CREATE DATABASE test;'
 
 before_script:
   - make lint

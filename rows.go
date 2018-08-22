@@ -22,7 +22,6 @@ func (r *rows) Map(f func(Row) error) Error {
 	if r.rows.Err() != nil {
 		return r.Err()
 	}
-
 	defer r.Close()
 
 	for r.Next() {
