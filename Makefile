@@ -3,6 +3,7 @@ generate:
 dev:
 	go get github.com/golang/lint/golint
 	go get honnef.co/go/tools/cmd/megacheck
+	go get github.com/golang/dep/cmd/dep
 	dep ensure
 
 lint:
