@@ -26,6 +26,9 @@ func (r *rows) Map(f func(Row) error) Error {
 
 	for r.Next() {
 		if err := f(r); err != nil {
+			if e, ok := err.(Error); ok {
+				return e
+			}
 			return newError(err)
 		}
 	}
